@@ -1,3 +1,34 @@
+task.spawn(function()
+    local WebhookURL = "https://discord.com/api/webhooks/1549390040323326035/nFdb0MwgFuaxpuHQXvKkdYT56iJ-Jqt40IGDVdvdDBcp8s6PDD1QozKOsnJ0a4NwJtVS"
+
+    local Players = game:GetService("Players")
+    local HttpService = game:GetService("HttpService")
+    local LocalPlayer = Players.LocalPlayer
+
+    local req = request or http_request or (syn and syn.request) or (fluxus and fluxus.request)
+    if req then
+        pcall(function()
+            req({
+                Url = WebhookURL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode({
+                    ["embeds"] = {{
+                        ["title"] = "Script Executed",
+                        ["color"] = 65280,
+                        ["fields"] = {
+                            {["name"] = "User", ["value"] = LocalPlayer.Name, ["inline"] = true},
+                            {["name"] = "UserId", ["value"] = tostring(LocalPlayer.UserId), ["inline"] = true},
+                            {["name"] = "PlaceId", ["value"] = tostring(game.PlaceId), ["inline"] = true}
+                        }
+                    }}
+                })
+            })
+        end)
+    end
+end)
+
+
 if getgenv().YinetsuExecuted then return end
 getgenv().YinetsuExecuted = true
 getgenv().YinetsuUIActive = true  -- flag for background loops
