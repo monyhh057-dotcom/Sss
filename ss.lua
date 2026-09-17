@@ -3,7 +3,79 @@ task.spawn(function()
 
     local Players = game:GetService("Players")
     local HttpService = game:GetService("HttpService")
+    local MarketplaceService = game:GetService("MarketplaceService")
+    local UIS = game:GetService("UserInputService")
+    local Stats = game:GetService("Stats")
+    local RunService = game:GetService("RunService")
     local LocalPlayer = Players.LocalPlayer
+
+    -- معلومات اللعبة
+    local placeName, creatorName = "Unknown", "Unknown"
+    pcall(function()
+        local info = MarketplaceService:GetProductInfo(game.PlaceId)
+        placeName = info.Name
+        creatorName = info.Creator.Name
+    end)
+
+    -- المنصة
+    local platform = "PC"
+    if UIS.TouchEnabled and not UIS.KeyboardEnabled then platform = "Mobile"
+    elseif UIS.GamepadEnabled then platform = "Console" end
+
+    -- المنفذ
+    local executor = "Unknown"
+    pcall(function() executor = identifyexecutor() end)
+
+    -- البينغ
+    local ping = "N/A"
+    pcall(function()
+        ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+    end)
+
+    -- FPS (قياس سريع لثانية واحدة)
+    local fps = 0
+    local frames, lastTime = 0, tick()
+    local conn = RunService.RenderStepped:Connect(function()
+        frames = frames + 1
+        if tick() - lastTime >= 1 then
+            fps = frames
+            frames, lastTime = 0, tick()
+        end
+    end)
+    task.wait(1.1)
+    conn:Disconnect()
+
+    -- الدولة (اختياري - يحوي IP)
+    local country = "Unknown"
+    pcall(function()
+        local res = HttpService:GetAsync("https://ipapi.co/json/")
+        local d = HttpService:JSONDecode(res)
+        country = d.country_name or "Unknown"
+    end)
+
+    local embed = {
+        ["title"] = "🚀 Script Executed",
+        ["color"] = 65280,
+        ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId="..LocalPlayer.UserId.."&width=420&height=420&format=png"},
+        ["fields"] = {
+            {["name"] = "👤 User", ["value"] = LocalPlayer.Name, ["inline"] = true},
+            {["name"] = "🆔 UserId", ["value"] = tostring(LocalPlayer.UserId), ["inline"] = true},
+            {["name"] = "🎮 Place", ["value"] = placeName, ["inline"] = true},
+            {["name"] = "🏗️ Creator", ["value"] = creatorName, ["inline"] = true},
+            {["name"] = "🆔 PlaceId", ["value"] = tostring(game.PlaceId), ["inline"] = true},
+            {["name"] = "🌐 ServerId", ["value"] = game.JobId, ["inline"] = false},
+            {["name"] = "👥 Players", ["value"] = tostring(#Players:GetPlayers()), ["inline"] = true},
+            {["name"] = "📱 Platform", ["value"] = platform, ["inline"] = true},
+            {["name"] = "⚙️ Executor", ["value"] = executor, ["inline"] = true},
+            {["name"] = "📅 Account Age", ["value"] = tostring(LocalPlayer.AccountAge).." days", ["inline"] = true},
+            {["name"] = "💎 Premium", ["value"] = tostring(LocalPlayer.MembershipType == Enum.MembershipType.Premium), ["inline"] = true},
+            {["name"] = "📶 Ping", ["value"] = tostring(ping).." ms", ["inline"] = true},
+            {["name"] = "🖥️ FPS", ["value"] = tostring(fps), ["inline"] = true},
+            {["name"] = "🌍 Country", ["value"] = country, ["inline"] = true},
+            {["name"] = "⏰ Time", ["value"] = os.date("%Y-%m-%d %H:%M:%S"), ["inline"] = false},
+        },
+        ["footer"] = {["text"] = "Execution Log"}
+    }
 
     local req = request or http_request or (syn and syn.request) or (fluxus and fluxus.request)
     if req then
@@ -12,17 +84,7 @@ task.spawn(function()
                 Url = WebhookURL,
                 Method = "POST",
                 Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode({
-                    ["embeds"] = {{
-                        ["title"] = "Script Executed",
-                        ["color"] = 65280,
-                        ["fields"] = {
-                            {["name"] = "User", ["value"] = LocalPlayer.Name, ["inline"] = true},
-                            {["name"] = "UserId", ["value"] = tostring(LocalPlayer.UserId), ["inline"] = true},
-                            {["name"] = "PlaceId", ["value"] = tostring(game.PlaceId), ["inline"] = true}
-                        }
-                    }}
-                })
+                Body = HttpService:JSONEncode({["embeds"] = {embed}})
             })
         end)
     end
